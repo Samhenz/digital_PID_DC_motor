@@ -68,11 +68,11 @@ void init_pwm()
     //
     // Set the pulse width of PWM0 for a (1/320)*100% duty cycle.
     //
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, 1);
+    //PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, 1);
     //
     // Set the pulse width of PWM1 for a 75% duty cycle.
     //
-    //PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, 150);
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, 150);
     //
     // Start the timers in generator 0.
     //

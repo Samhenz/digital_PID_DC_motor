@@ -34,7 +34,7 @@
 //#include "utils/uartstdio.h"
 
 #define VEL_INT_FREQ    5000
-#define QEI0_PPR        419
+#define QEI0_PPR        30
 
 void init_qei0()
 {
@@ -54,7 +54,7 @@ void init_qei0()
         GPIOPinConfigure(GPIO_PD7_PHB0);
 
     // Configure the QEI0 to increment for both PhA and PhB for quadrature input with "QEI0_PPR" PPR
-        QEIConfigure(QEI0_BASE, QEI_CONFIG_CAPTURE_A | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP, QEI0_PPR);
+        QEIConfigure(QEI0_BASE, QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP, QEI0_PPR);
 
     // Configure the QEI0 for Velocity Calculation, Predivide by 1 at "VEL_INT_FREQ" Hz
         QEIVelocityConfigure(QEI0_BASE, QEI_VELDIV_1, SysCtlClockGet() / VEL_INT_FREQ);

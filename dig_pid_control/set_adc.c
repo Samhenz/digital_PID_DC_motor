@@ -20,7 +20,7 @@
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_GPIO.h"
-//#include "inc/hw_uart.h"
+
 
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
@@ -31,7 +31,7 @@
 #include "driverlib/adc.h"
 #include "driverlib/uart.h"
 #include "driverlib/qei.h"
-//#include "utils/uartstdio.h"
+
 
 
 void init_adc(uint32_t s_freq_adc)
