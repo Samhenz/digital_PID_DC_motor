@@ -16,11 +16,12 @@
 #include <set_uart.h>
 #include <set_qei.h>
 #include <uartstdio.h>
+//#include <set_tmr.h>
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_GPIO.h"
-//#include "inc/hw_uart.h"
+
 
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
@@ -31,7 +32,7 @@
 #include "driverlib/adc.h"
 #include "driverlib/uart.h"
 #include "driverlib/qei.h"
-//#include "utils/uartstdio.h"
+
 
 
 void init_adc(uint32_t s_freq_adc)
@@ -61,6 +62,12 @@ void init_adc(uint32_t s_freq_adc)
     //Enable the ADC trigger output by timer A.
     //
     TimerControlTrigger(TIMER0_BASE, TIMER_A, true);
+
+    //TimerIntRegister(TIMER1_BASE, TIMER_A, &T0IntHandler);
+    // Setup the interrupts for the timer timeouts.
+    //IntEnable(INT_TIMER0A);
+    TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+            //
     //
     // Enable the timer.
     //

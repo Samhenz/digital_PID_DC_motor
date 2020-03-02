@@ -23,24 +23,42 @@
 #include "driverlib/uart.h"
 #include "driverlib/qei.h"
 
-//#include "utils/uartstdio.h"
 
-#define VEL_INT_FREQ    5000               // Interrupt frequency of QEI0
+#define VEL_INT_FREQ    995              // Interrupt frequency of QEI0
 #define QEI0_PPR        419              // Pulses Per Rev of the QEI0
 
+// Constantes para el PID
+#define Ki 0.08
+#define KD 0.0145
+#define KP 10
 
-uint32_t const s_freq_adc = 10000;
+// Período de muestreo
+#define Delta_t 0.001
+
+uint32_t const s_freq_adc = 80000;
 uint32_t samples_adc[1]; //0 - 4096
 uint32_t speed;
+uint32_t pos;
+uint32_t ref_pos;
 
 
 uint32_t enco_Vel;
 uint32_t enco_Pos;              // Variable to store the position of QEI0
 int32_t enco_Dir;                // Variable to store the direction of QEI0
 uint16_t enco_Vel_Rpm;              // Variable to store the RPM of QEI0
+uint16_t count = 0;
 
-void motor_speed();
-void com_uart();
+float K_i = Ki*Delta_t ;
+float K_D = KD/Delta_t ;
+float K_P = KP;
+float e_k_1 = 0;
+float E_k = 0;
+
+float e_k = 0;
+float e_D = 0;
+float u_k = 0;
+
+void adc_read();
 void int_handler_qei0();
 
 
@@ -52,55 +70,12 @@ int main(void)
     init_adc(s_freq_adc);
     init_uart();
     init_qei0();
-    //UARTprintf("Hello world %d!\r\n", 1234);
-    /*
-    uint8_t Text[] = {"Vel RPM: "};
-    uint8_t i;
-    for (i = 0; i<sizeof(Text); i++ )
-        UARTCharPutNonBlocking(UART0_BASE, Text[i]);
-        */
+    // ISR register
+    ADCIntRegister(ADC0_BASE, 3, adc_read);
+    QEIIntRegister(QEI0_BASE, int_handler_qei0);
 
-    while(1)
-    {
+    while(1);
 
-        // ISR register
-        ADCIntRegister(ADC0_BASE, 3, motor_speed);
-
-        //registers the handler to be called when a quadrature encoder interrupt occurs
-        void (*int_handler_qei0_ptr)(void) = int_handler_qei0;
-        int_handler_qei0_ptr();
-        UARTprintf("velocidad %d!\r\n", enco_Vel_Rpm);
-        QEIIntRegister(QEI0_BASE, *int_handler_qei0_ptr);
-        QEIIntEnable(QEI0_BASE, QEI_INTTIMER);
-        //com_uart();
-
-
-
-    }
-}
-
-void motor_speed()
-{
-    ADCIntClear(ADC0_BASE, 3);
-    ADCSequenceDataGet(ADC0_BASE, 3, samples_adc);
-    speed = (uint32_t)((320.0*(float)samples_adc[0])/4096.0); //320.0 -> PWM period in clock ticks
-    if (speed < 5)
-            {
-                speed = 5;
-            }
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, speed);
-
-}
-
-void com_uart(){
-    // ISR for UART interrupt handling
-    // Clear the asserted UART interrupts
-    UARTIntClear(UART0_BASE, UARTIntStatus(UART0_BASE, true));
-    // While there is a character available at input
-    while(UARTCharsAvail(UART0_BASE)){
-        // Echo the character back to the user
-        UARTCharPutNonBlocking(UART0_BASE, UARTCharGetNonBlocking(UART0_BASE));
-    }
 }
 
 void int_handler_qei0(){
@@ -114,7 +89,68 @@ void int_handler_qei0(){
     // Update the direction reading of the encoder
     enco_Dir = QEIDirectionGet(QEI0_BASE);
     // Calculate the velocity in RPM
-    enco_Vel_Rpm = enco_Vel * VEL_INT_FREQ * 60 / QEI0_PPR;
-
+    enco_Vel_Rpm = QEIVelocityGet(QEI0_BASE) * VEL_INT_FREQ * 60 / QEI0_PPR;
+    //UARTprintf("posicion %d:\r\n", enco_Pos);
     //UARTprintf("velocidad %d!\r\n", enco_Vel_Rpm);
+    //QEIIntEnable(QEI0_BASE, QEI_INTTIMER);
 }
+
+void adc_read()
+{
+    count++;
+    ADCIntClear(ADC0_BASE, 3);
+    ADCSequenceDataGet(ADC0_BASE, 3, samples_adc);
+    //reference
+    speed = (uint32_t)((320.0*(float)samples_adc[0])/4096.0); //320.0 -> PWM period in clock ticks
+    if (speed < 5)
+            {
+                speed = 5;
+            }
+    //enco_Pos = QEIPositionGet(QEI0_BASE);
+
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, speed);
+    if (count == 1000)
+        {
+            count = 0;
+            UARTprintf("velocidad %d!\r\n", enco_Vel);
+        }
+
+    // Algoritmo para el PID
+/*
+    e_k = speed - enco_Pos;
+    e_D = e_k - e_k_1;
+    E_k = E_k + e_k;
+    u_k = K_P*e_k + K_i*E_k + K_D*e_D;
+    e_k_1 = e_k;
+
+    // Cotas sup e inf para u_k
+    if (u_k > 29){
+        u_k = 29;
+    }
+    if (u_k < -29){
+        u_k = -29;
+    }
+
+    pos = (320/30)*(u_k);
+
+    if (pos>0)
+    {
+        PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, pos);
+        PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, 1);
+    }
+    else if (pos<=0)
+    {
+        PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, 1);
+        PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, pos);
+    }
+
+    UARTprintf("posicion %d:\r\n", enco_Pos);
+*/
+
+
+}
+
+
+
+
+

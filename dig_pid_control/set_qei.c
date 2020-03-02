@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <uartstdio.h>
+//#include <set_tmr.h>
 
 #include <set_pwm.h>
 #include <set_adc.h>
@@ -33,14 +34,15 @@
 #include "driverlib/qei.h"
 //#include "utils/uartstdio.h"
 
-#define VEL_INT_FREQ    5000
+#define VEL_INT_FREQ    350
 #define QEI0_PPR        419
 
 void init_qei0()
 {
     // Enable the clock for peripherals PortD and QEI0
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_QEI0);
         SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_QEI0);
+
     //
     // Wait for the QEI0 module to be ready.
     //
@@ -53,17 +55,33 @@ void init_qei0()
         GPIOPinConfigure(GPIO_PD6_PHA0);
         GPIOPinConfigure(GPIO_PD7_PHB0);
 
-    // Configure the QEI0 to increment for both PhA and PhB for quadrature input with "QEI0_PPR" PPR
-        QEIConfigure(QEI0_BASE, QEI_CONFIG_CAPTURE_A | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP, QEI0_PPR);
+    //Make sure quadrature encoder is off
+        QEIDisable(QEI0_BASE);
+        QEIIntDisable(QEI0_BASE, QEI_INTERROR | QEI_INTDIR | QEI_INTTIMER | QEI_INTINDEX);
 
-    // Configure the QEI0 for Velocity Calculation, Predivide by 1 at "VEL_INT_FREQ" Hz
-        QEIVelocityConfigure(QEI0_BASE, QEI_VELDIV_1, SysCtlClockGet() / VEL_INT_FREQ);
-        QEIVelocityEnable(QEI0_BASE);
+    // Configure the QEI0 to increment for both PhA and PhB for quadrature input with "QEI0_PPR" PPR
+        QEIConfigure(QEI0_BASE, QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_SWAP, QEI0_PPR);
 
     // Enable the QEI1
         QEIEnable(QEI0_BASE);
 
+    //Enable noise filter
+        //QEIFilterDisable(QEI0_BASE);
+        //QEIFilterConfigure(QEI0_BASE, QEI_FILTCNT_17);
+        //QEIFilterEnable(QEI0_BASE);
 
+    // Configure the QEI0 for Velocity Calculation, Predivide by 1 at "VEL_INT_FREQ" Hz
+        QEIVelocityDisable(QEI0_BASE);
+        QEIVelocityConfigure(QEI0_BASE, QEI_VELDIV_1,  SysCtlClockGet()/ VEL_INT_FREQ);
+        QEIVelocityEnable(QEI0_BASE);
+
+    // Enable processor interrupts.
+        //IntMasterEnable();
+        //IntEnable(INT_QEI0);
+
+
+    //Enable Interrupt
+        QEIIntEnable(QEI0_BASE, QEI_INTTIMER);
 }
 
 

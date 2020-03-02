@@ -18,6 +18,7 @@
 #include <set_uart.h>
 #include <set_qei.h>
 #include <uartstdio.h>
+//#include <set_tmr.h>
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
@@ -72,7 +73,7 @@ void init_pwm()
     //
     // Set the pulse width of PWM1 for a 75% duty cycle.
     //
-    //PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, 150);
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, 1);
     //
     // Start the timers in generator 0.
     //
